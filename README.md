@@ -42,6 +42,45 @@
   [Ссылка](https://github.com/Elenthrill/SuperDuperBot/blob/main/requirements.txt)  
   Список зависимостей Python, которые необходимы для запуска проекта.
 
+## Описание папок и файлов внутри `app/bot`
+
+- **__init__.py**  
+  [Ссылка](https://github.com/Elenthrill/SuperDuperBot/blob/main/app/bot/__init__.py)  
+  Позволяет использовать папку как модуль Python, инициализирует пакет bot.
+
+- **bot.py**  
+  [Ссылка](https://github.com/Elenthrill/SuperDuperBot/blob/main/app/bot/bot.py)  
+  Основной файл логики бота: здесь описана архитектура, запуск и взаимодействие с платформой (Telegram/Discord или другой).
+
+- **enums/**  
+  [Ссылка](https://github.com/Elenthrill/SuperDuperBot/tree/main/app/bot/enums)  
+  Содержит классы перечислений (Enum) — для типизированных констант, статусов, событий и т.д.
+
+- **filters/**  
+  [Ссылка](https://github.com/Elenthrill/SuperDuperBot/tree/main/app/bot/filters)  
+  Фильтры сообщений и событий: реализуют дополнительную логику для обработки пользовательских запросов.
+
+- **handlers/**  
+  [Ссылка](https://github.com/Elenthrill/SuperDuperBot/tree/main/app/bot/handlers)  
+  Описывает обработчики сообщений, команд, событий (реакции на действия пользователей).
+
+- **i18n/**  
+  [Ссылка](https://github.com/Elenthrill/SuperDuperBot/tree/main/app/bot/i18n)  
+  Реализует международализацию (i18n) — поддержка разных языков, перевод сообщений.
+
+- **keyboards/**  
+  [Ссылка](https://github.com/Elenthrill/SuperDuperBot/tree/main/app/bot/keyboards)  
+  Здесь формируются пользовательские интерфейсы клавиатур (inline, reply), используемых ботом.
+
+- **midlewares/**  
+  [Ссылка](https://github.com/Elenthrill/SuperDuperBot/tree/main/app/bot/midlewares)  
+  Промежуточные обработчики (middlewares) для дополнительных операций между получением и обработкой сообщения.
+
+- **states/**  
+  [Ссылка](https://github.com/Elenthrill/SuperDuperBot/tree/main/app/bot/states)  
+  Содержит описание состояний, используемых ботом (например, для FSM — конечных автоматов состояний при взаимодействии с пользователем).
+
+
 ---
 
 ## Как начать работу
