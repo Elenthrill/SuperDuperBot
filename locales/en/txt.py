@@ -61,4 +61,8 @@ EN: dict[str, str] = {
     "not_banned": "❗ The user was not banned anyway!",
     "successfully_unbanned": "⚠️ The user has been successfully unbanned!",
     "statistics": "📊 <b>Statistics on user actions:</b>\n\n{}",
+    "bad_time_format": "Введен невенрный формат времени, пожалуйста введите сообщение вида: XXhXXm,например 0h30m",
+    "succes_user_time_update": "ваше свободное время успешно обнавленно",
+    "/set_time": "Введите пожалуйста время в формате XXhXXm например: 2h30m",
+    "add_to_group": "Привет, я бот для помощи распределения бытоавх задач",
 }

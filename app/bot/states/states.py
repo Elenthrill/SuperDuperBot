@@ -6,5 +6,4 @@ class LangSg(StatesGroup):
 
 
 class DialogWithUser(StatesGroup):
-    service_choice = State()
-    user_report_start = State()
+    user_ad_time_start = State()

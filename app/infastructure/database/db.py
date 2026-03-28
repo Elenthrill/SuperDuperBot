@@ -1,6 +1,11 @@
 import logging
-from datetime import datetime, timezone
+from psycopg.rows import dict_row
+from datetime import datetime, timezone, timedelta
 from typing import Any
+from app.bot.entities.user import User
+from app.bot.entities.task import Task
+from app.bot.entities.group import Group
+from typing import List, Dict
 
 from app.bot.enums.roles import UserRole
 from psycopg import AsyncConnection
@@ -9,49 +14,108 @@ from psycopg import AsyncConnection
 logger = logging.getLogger(__name__)
 
 
-async def add_user(
-    conn: AsyncConnection,
-    *,
-    user_id: int,
-    username: str | None = None,
-    language: str = "ru",
-    role: UserRole = UserRole.USER,
-    is_alive: bool = True,
-    banned: bool = False,
-) -> None:
+async def add_user(conn: AsyncConnection, *, user: User) -> None:
     async with conn.cursor() as cursor:
         await cursor.execute(
             query="""
-                INSERT INTO users(user_id, username, language, role, is_alive, banned)
+                INSERT INTO users(user_id, username, language, role, is_alive, banned, free_time,raiting)
                 VALUES(
                     %(user_id)s, 
                     %(username)s, 
                     %(language)s, 
                     %(role)s, 
                     %(is_alive)s, 
-                    %(banned)s
+                    %(banned)s,
+                   %(free_time)s,
+                    %(raiting)s
                 ) ON CONFLICT DO NOTHING;
             """,
             params={
-                "user_id": user_id,
-                "username": username,
-                "language": language,
-                "role": role,
-                "is_alive": is_alive,
-                "banned": banned,
+                "user_id": user.user_id,
+                "username": user.user_name,
+                "language": user.lang,
+                "role": user.role,
+                "is_alive": user.is_alive,
+                "banned": user.banned,
+                "free_time": user.free_time_at_week,
+                "raiting": user.raiting,
             },
         )
     logger.info(
         "User added. Table=`%s`, user_id=%d, created_at='%s', "
-        "language='%s', role=%s, is_alive=%s, banned=%s",
+        "language='%s', role=%s, is_alive=%s, banned=%s, raiting=%s, free_time=%s",
         "users",
-        user_id,
+        user.user_id,
         datetime.now(timezone.utc),
-        language,
-        role,
-        is_alive,
-        banned,
+        user.lang,
+        user.role,
+        user.is_alive,
+        user.banned,
+        user.raiting,
+        user.free_time_at_week,
     )
+
+
+async def add_task(conn: AsyncConnection, *, task: Task) -> tuple[Any, ...] | None:
+    async with conn.cursor() as cursor:
+        await cursor.execute(
+            query="""
+                INSERT INTO tasks(description, duration, reward, status,deadline,user_id,group_id)
+                VALUES(
+                    %(description)s,
+                    %(duration)s,
+                    %(reward)s,
+                    %(status)s,
+                    %(deadline)s,
+                    %(user_id)s,
+                    %(group_id)s
+                )
+                """,
+            params={
+                "description": task.description,
+                "duration": task.duration,
+                "reward": task.reward,
+                "status": task.status,
+                "deadline": task.deadline,
+                "user_id": task.user_id,
+                "group_id": task.group_id,
+            },
+        )
+
+
+# async def get_task_by_task_id(conn: AsyncConnection,)
+
+
+async def get_user_tasks(
+    conn: AsyncConnection,
+    *,
+    user_id: int,
+) -> List[Dict[str, Any]]:
+    async with conn.cursor(row_factory=dict_row) as cursor:
+        await cursor.execute(
+            """
+            SELECT
+                id,
+                description,
+                start_time,
+                duration,
+                reward,
+                status,
+                deadline,
+                end_time,
+                user_id,
+                group_id
+            FROM tasks
+            WHERE user_id = %s
+            ORDER BY deadline ASC
+            """,
+            (user_id,),
+        )
+        rows = await cursor.fetchall()
+    return rows
+
+
+# async def get_tasks_by_group_id
 
 
 async def get_user(
@@ -70,7 +134,8 @@ async def get_user(
                     role,
                     is_alive,
                     banned,
-                    created_at
+                    raiting,
+                    free_time
                     FROM users WHERE user_id = %s;
             """,
             params=(user_id,),
@@ -78,6 +143,32 @@ async def get_user(
         row = await data.fetchone()
     logger.info("Row is %s", row)
     return row if row else None
+
+
+async def get_user_groups(
+    conn: AsyncConnection,
+    *,
+    user_id: int,
+) -> List[Dict[Any, ...]]:
+    async with conn.cursor(row_factory=dict_row) as cursor:
+        await cursor.execute(
+            """
+            SELECT
+                g.id,
+                g.group_id,
+                g.title,
+                g.name,
+                g.is_alive,
+                g.banned
+            FROM user_group ug
+            JOIN groups g ON ug.group_id = g.group_id
+            WHERE ug.user_id = %s
+            """,
+            (user_id,),
+        )
+        rows = await cursor.fetchall()
+    logger.info("Fetched %d groups for user_id=%s", len(rows), user_id)
+    return rows
 
 
 async def change_user_alive_status(
@@ -150,6 +241,24 @@ async def update_user_lang(
             params=(language, user_id),
         )
     logger.info("The language `%s` is set for the user `%s`", language, user_id)
+
+
+async def update_user_time(
+    conn: AsyncConnection,
+    *,
+    time: timedelta,
+    user_id: int,
+) -> None:
+    async with conn.cursor() as cursor:
+        await cursor.execute(
+            query="""
+                UPDATE users
+                SET free_time = %s
+                WHERE user_id = %s
+            """,
+            params=(time, user_id),
+        )
+    logger.info("The time interval `%s` is set for the user `%s`", timedelta, user_id)
 
 
 async def get_user_lang(
@@ -258,25 +367,6 @@ async def get_user_role(
     return UserRole(row[0]) if row else None
 
 
-async def add_user_activity(
-    conn: AsyncConnection,
-    *,
-    user_id: int,
-) -> None:
-    async with conn.cursor() as cursor:
-        await cursor.execute(
-            query="""
-                INSERT INTO activity (user_id)
-                VALUES (%s)
-                ON CONFLICT (user_id, activity_date)
-                DO UPDATE
-                SET actions = activity.actions + 1;
-            """,
-            params=(user_id,),
-        )
-    logger.info("User activity updated. table=`activity`, user_id=%d", user_id)
-
-
 async def add_user_message(
     conn: AsyncConnection,
     *,
@@ -305,89 +395,71 @@ async def add_user_message(
         )
 
 
-async def get_statistics(conn: AsyncConnection) -> list[Any, ...] | None:
+async def get_group(
+    conn: AsyncConnection,
+    *,
+    group_id: int,
+) -> tuple[Any, ...] | None:
     async with conn.cursor() as cursor:
         data = await cursor.execute(
             query="""
-                SELECT user_id, SUM(actions) AS total_actions
-                FROM activity
-                GROUP BY user_id
-                ORDER BY total_actions DESC
-                LIMIT 5;
+                SELECT 
+                    id,
+                    group_id,
+                    title,
+                    name
+                FROM groups 
+                WHERE group_id = %s;
             """,
+            params=(group_id,),
         )
-        rows = await data.fetchall()
-    logger.info("Users activity got from table=`activity`")
-    return [*rows] if rows else None
+        row = await data.fetchone()
+    logger.info("Group row is %s", row)
+    return row if row else None
 
 
-async def add_report(
+async def add_to_user_group_table(
     conn: AsyncConnection,
     *,
     user_id: int,
-    service_worker_id: int,
-    agency: str,
-    status: str,
-    text: str | None = None,
-    photo: bytes | None = None,
-    video: bytes | None = None,
-) -> int | None:
+    group_id: int,
+):
     async with conn.cursor() as cursor:
-        print()
         await cursor.execute(
             query="""
-                INSERT INTO reports(user_id, service_worker_id, agency, status, text, photo, video)
-                VALUES(
+                INSERT INTO user_group (user_id, group_id) 
+                VALUES (
                     %(user_id)s,
-                    %(service_worker_id)s, 
-                    %(agency)s, 
-                    %(status)s, 
-                    %(text)s, 
-                    %(photo)s, 
-                    %(video)s 
-                ) 
-                ON CONFLICT DO NOTHING
-                RETURNING id;
-            """,
+                    %(group_id)s
+                    );
+                """,
+            params={"user_id": user_id, "group_id": group_id},
+        )
+        logger.info(
+            f"пользователь с id{user_id} и группа с id {group_id} добавлены в таблицу user_group"
+        )
+
+
+async def add_group(conn: AsyncConnection, group: Group):
+    async with conn.cursor() as cursor:
+        await cursor.execute(
+            query="""
+                INSERT INTO groups (group_id, title, name, is_alive, banned)
+                VALUES (
+                    %(group_id)s,
+                    %(title)s,
+                    %(name)s,
+                    %(is_alive)s,
+                    %(banned)s);
+                """,
             params={
-                "user_id": user_id,
-                "service_worker_id": service_worker_id,
-                "agency": agency,
-                "status": status,
-                "text": text,
-                "photo": photo,
-                "video": video,
+                "group_id": group.group_id,
+                "title": group.title,
+                "name": group.name,
+                "is_alive": group.is_alive,
+                "banned": group.banned,
             },
         )
-        result = await cursor.fetchone()
-        id = result[0] if result else None
-        logger.info("ALL GOOOOOD")
-        return id
-
-
-# async def get_report_id(conn: AsyncConnection)-> int:
-
-
-async def update_report(
-    conn: AsyncConnection,
-    *,
-    report_id: int,
-    service_worker_id: str,
-    status: str,
-) -> None:
-    print(f"XXXXXXXXXXXX{report_id}XXXXx{status}")
-    async with conn.cursor() as cursor:
-        await cursor.execute(
-            query="""
-                UPDATE reports
-                SET service_worker_id = %s,status = %s
-                WHERE id = %s
-            """,
-            params=(service_worker_id, status, report_id),
+        logger.info(
+            f"группа {group.name} с id {group.group_id} добавлена в таблицу groups"
         )
-    logger.info(
-        "The reports table is updated: service worker `%s` change report from user '%s' to '%s'",
-        report_id,
-        service_worker_id,
-        status,
-    )

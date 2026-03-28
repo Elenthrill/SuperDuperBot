@@ -10,10 +10,6 @@ logger = logging.getLogger(__name__)
 @dataclass
 class BotSettings:
     token: str
-    admin_ids: list[int]
-    pollice_group_id: int
-    traffic_police_group_id: int
-    fire_department_group_id: int
 
 
 @dataclass
@@ -63,17 +59,6 @@ def load_config(path: str | None = None) -> Config:
     if not token:
         raise ValueError("BOT_TOKEN must be not empty")
 
-    raw_ids = env.list("ADMIN_IDS", default=[])
-
-    try:
-        admin_ids = [int(x) for x in raw_ids]
-        pollice_group_id = env.int("POLLICE_ID")
-        traffic_police_group_id = env.int("TRAFFIC_POLICE_ID")
-        fire_department_group_id = env.int("FIRE_DEPARTMENT_ID")
-
-    except ValueError as e:
-        raise ValueError(f"ADMIN_IDS must be integers, got: {raw_ids}") from e
-
     db = DatabaseSettings(
         name=env("POSTGRES_DB"),
         host=env("POSTGRES_HOST"),
@@ -97,10 +82,6 @@ def load_config(path: str | None = None) -> Config:
     return Config(
         bot=BotSettings(
             token=token,
-            admin_ids=admin_ids,
-            pollice_group_id=pollice_group_id,
-            traffic_police_group_id=traffic_police_group_id,
-            fire_department_group_id=fire_department_group_id,
         ),
         db=db,
         redis=redis,
