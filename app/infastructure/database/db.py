@@ -56,31 +56,42 @@ async def add_user(conn: AsyncConnection, *, user: User) -> None:
     )
 
 
-async def add_task(conn: AsyncConnection, *, task: Task) -> tuple[Any, ...] | None:
+async def add_task_to_db(
+    conn: AsyncConnection, *, task: Task
+) -> tuple[Any, ...] | None:
     async with conn.cursor() as cursor:
-        await cursor.execute(
-            query="""
-                INSERT INTO tasks(description, duration, reward, status,deadline,user_id,group_id)
-                VALUES(
-                    %(description)s,
-                    %(duration)s,
-                    %(reward)s,
-                    %(status)s,
-                    %(deadline)s,
-                    %(user_id)s,
-                    %(group_id)s
-                )
-                """,
-            params={
-                "description": task.description,
-                "duration": task.duration,
-                "reward": task.reward,
-                "status": task.status,
-                "deadline": task.deadline,
-                "user_id": task.user_id,
-                "group_id": task.group_id,
-            },
-        )
+        try:
+            await cursor.execute(
+                query="""
+                    INSERT INTO tasks(description, duration, reward, status,deadline,user_id,group_id)
+                    VALUES(
+                        %(description)s,
+                        %(duration)s,
+                        %(reward)s,
+                        %(status)s,
+                        %(deadline)s,
+                        %(user_id)s,
+                        %(group_id)s
+                    )
+                    RETURNING id
+                    """,
+                params={
+                    "description": task.description,
+                    "duration": task.duration,
+                    "reward": task.reward,
+                    "status": task.status,
+                    "deadline": task.deadline,
+                    "user_id": task.user_id,
+                    "group_id": task.group_id,
+                },
+            )
+            row = await cursor.fetchone()
+            if row:
+                return row[0]  # или row['id']
+            return None
+        except Exception as e:
+            logger.error(f"Не удалось вставить задачу: {e}", exc_info=True)
+            raise
 
 
 # async def get_task_by_task_id(conn: AsyncConnection,)

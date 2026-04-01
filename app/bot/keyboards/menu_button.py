@@ -8,8 +8,12 @@ def get_main_menu_commands(i18n: dict[str, str], role: UserRole):
             BotCommand(command="/start", description=i18n.get("/start_description")),
             BotCommand(command="/lang", description=i18n.get("/lang_description")),
             BotCommand(command="/help", description=i18n.get("/help_description")),
-            BotCommand(command="/set_time", description=i18n.get("/set_time")),
-            BotCommand(command="/set_time", description=i18n.get("/set_time")),
+            BotCommand(
+                command="/set_time", description=i18n.get("/set_time_description")
+            ),
+            BotCommand(
+                command="/new_task", description=i18n.get("/new_task_description")
+            ),
         ]
     elif role == UserRole.ADMIN:
         return [
