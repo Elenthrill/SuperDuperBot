@@ -2,7 +2,12 @@ import logging
 from psycopg import AsyncConnection
 from app.bot.enums.roles import UserRole
 from app.bot.entities.user import User
-from app.infastructure.database.db import change_user_alive_status, add_user, get_user
+from app.infastructure.database.db import (
+    change_user_alive_status,
+    add_user,
+    get_user,
+    get_user_groups,
+)
 from typing import Union
 from aiogram.types import Message, ChatMemberUpdated, User as TgUSer
 
@@ -38,3 +43,28 @@ async def add_user_from_event(
             is_alive=True,
             user_id=user_obj.id,
         )
+
+
+def parse_user_time(text: str) -> tuple[int, int]:
+    h_index = text.find("h")
+    try:
+        if h_index == -1:
+            return (None, None)
+        hours = int(text[:h_index])
+
+        # Оставшаяся часть после 'h' до 'm'
+        m_str = text[h_index + 1 :]
+        if not m_str.endswith("m"):
+            return (None, None)
+        minutes = int(m_str[:-1])
+        return (hours, minutes)
+    except:
+        return (None, None)
+
+
+async def get_groups_text(conn: AsyncConnection, user_id: int) -> str:
+    groups = await get_user_groups(conn, user_id=user_id)
+    if not groups:
+        return "У вас нет групп."
+    lines = [f"Группа: {group['title']} ID:{group['group_id']}" for group in groups]
+    return "\n".join(lines)

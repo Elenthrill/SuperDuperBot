@@ -53,6 +53,19 @@ async def main():
                     logger.info("создана таблица users")
                     await cursor.execute(
                         query="""
+                            CREATE TABLE IF NOT EXISTS groups(
+                            id SERIAL PRIMARY KEY,
+                            group_id BIGINT NOT NULL UNIQUE,
+                            title TEXT,
+                            name TEXT,
+                            is_alive BOOLEAN NOT NULL,
+                            banned BOOLEAN NOT NULL
+                            );
+                        """
+                    )
+                    logger.info("создана таблица groups")
+                    await cursor.execute(
+                        query="""
                             CREATE TABLE IF NOT EXISTS tasks(
                                 id SERIAL PRIMARY KEY,
                                 description TEXT NOT NULL,
@@ -62,14 +75,26 @@ async def main():
                                 status VARCHAR(20) NOT NULL DEFAULT 'pending',
                                 deadline TIMESTAMPTZ NOT NULL,
                                 end_time TIMESTAMPTZ,
-                                user_id BIGINT REFERENCES users(user_id)
+                                user_id BIGINT REFERENCES users(user_id),
                                 group_id BIGINT REFERENCES groups(group_id)
                             ); 
                             CREATE INDEX idx_tasks_user_id ON tasks(user_id);
                             
                         """
                     )
-
+                    logger.info("создана таблица tasks")
+                    await cursor.execute(
+                        query="""
+                            CREATE TABLE IF NOT EXISTS user_group(
+                            user_id BIGINT NOT NULL,
+                            group_id BIGINT NOT NULL,
+                            PRIMARY KEY (user_id, group_id),
+                            FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                            FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE                      
+                            );
+                            """
+                    )
+                    logger.info("создана таблица user_group")
                     await cursor.execute(
                         query="""
                             CREATE TABLE IF NOT EXISTS user_messages(
@@ -83,29 +108,6 @@ async def main():
                         """
                     )
                     logger.info("создана таблица _messages")
-                    await cursor.execute(
-                        query="""
-                            CREATE TABLE IF NOT EXISTS groups(
-                            id SERIAL PRIMARY KEY,
-                            group_id BIGINT NOT NULL UNIQUE,
-                            title TEXT,
-                            name TEXT,
-                            is_alive BOOLEAN NOT NULL,
-                            banned BOOLEAN NOT NULL
-                            );
-                        """
-                    )
-                    await cursor.execute(
-                        query="""
-                            CREATE TABLE IF NOT EXISTS user_group(
-                            user_id BIGINT NOT NULL,
-                            group_id BIGINT NOT NULL,
-                            PRIMARY KEY (user_id, group_id),
-                            FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-                            FOREIGN KEY (group_id) REFERENCES groups(group_id) ON DELETE CASCADE                      
-                            );
-                            """
-                    )
                     await cursor.execute("""
                                         -- функция, которая устанавливает end_time при смене статуса на 'completed'
                                         CREATE OR REPLACE FUNCTION set_end_time_on_complete()

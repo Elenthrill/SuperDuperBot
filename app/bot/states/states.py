@@ -7,3 +7,4 @@ class LangSg(StatesGroup):
 
 class DialogWithUser(StatesGroup):
     user_ad_time_start = State()
+    user_ad_task_start = State()
