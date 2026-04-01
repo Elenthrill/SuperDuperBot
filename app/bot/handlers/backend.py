@@ -1,4 +1,5 @@
 import logging
+from typing import Optional, Tuple
 from psycopg import AsyncConnection
 from app.bot.enums.roles import UserRole
 from app.bot.entities.user import User
@@ -45,21 +46,26 @@ async def add_user_from_event(
         )
 
 
-def parse_user_time(text: str) -> tuple[int, int]:
+def parse_user_time(text: str) -> Optional[Tuple[int, int]]:
     h_index = text.find("h")
-    try:
-        if h_index == -1:
-            return (None, None)
-        hours = int(text[:h_index])
+    if h_index == -1:
+        return None
 
-        # Оставшаяся часть после 'h' до 'm'
-        m_str = text[h_index + 1 :]
-        if not m_str.endswith("m"):
-            return (None, None)
+    try:
+        hours = int(text[:h_index])
+    except ValueError:
+        return None
+
+    m_str = text[h_index + 1 :]
+    if not m_str.endswith("m"):
+        return None
+
+    try:
         minutes = int(m_str[:-1])
-        return (hours, minutes)
-    except:
-        return (None, None)
+    except ValueError:
+        return None
+
+    return hours, minutes
 
 
 async def get_groups_text(conn: AsyncConnection, user_id: int) -> str:
