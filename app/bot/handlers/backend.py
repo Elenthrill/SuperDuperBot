@@ -11,6 +11,7 @@ from app.infastructure.database.db import (
 )
 from typing import Union
 from aiogram.types import Message, ChatMemberUpdated, User as TgUSer
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -74,3 +75,36 @@ async def get_groups_text(conn: AsyncConnection, user_id: int) -> str:
         return "У вас нет групп."
     lines = [f"Группа: {group['title']} ID:{group['group_id']}" for group in groups]
     return "\n".join(lines)
+
+def parse_user_time(text: str):
+    text = text.lower().replace(" ", "")
+
+    # Форматы:
+    #  "2ч30м"
+    #  "2ч"
+    #  "30м"
+    #  "1:45"
+    #  "150м"
+    #  "1h 20m"
+
+    # 1) 1:30
+    if ":" in text:
+        h, m = text.split(":")
+        return int(h), int(m)
+
+    # 2) Только часы
+    if "ч" in text and "м" not in text:
+        h = int(text.replace("ч", ""))
+        return h, 0
+
+    # 3) Только минуты
+    if "м" in text and "ч" not in text:
+        m = int(text.replace("м", ""))
+        return 0, m
+
+    # 4) Формат 2ч30м
+    match = re.match(r"(\d+)ч(\d+)м", text)
+    if match:
+        return int(match.group(1)), int(match.group(2))
+
+    return None, None

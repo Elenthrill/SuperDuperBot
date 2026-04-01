@@ -15,6 +15,7 @@ from app.bot.midlewares.database import DataBaseMiddleware
 from app.bot.midlewares.i18n import TranslatorMiddleware
 from app.bot.midlewares.lang_settings import LangSettingsMiddleware
 from app.bot.midlewares.shadow_ban import ShadowBanMiddleware
+from app.bot.handlers.set_time import set_time_router
 from app.bot.midlewares.add_user_msg_in_db import AddUserMessageInDatabase
 from app.infastructure.database.connection import get_pg_pool
 from config.config import Config
@@ -61,7 +62,7 @@ async def main(config: Config) -> None:
     # Подключаем роутеры в нужном порядке
     logger.info("Including routers...")
     dp.include_routers(
-        settings_router, admin_router, user_router, group_router, others_router
+        settings_router, admin_router, user_router, group_router, others_router, set_time_router
     )
 
     # Подключаем миддлвари в нужном порядке

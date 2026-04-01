@@ -100,16 +100,16 @@ async def process_comand_start(
     await state.clear()
 
 
-@user_router.message(Command(commands="set_time"))
-async def process_comand_set_time(
-    message: Message,
-    conn: AsyncConnection,
-    bot: Bot,
-    i18n: dict[str, str],
-    state: FSMContext,
-):
-    await state.set_state(DialogWithUser.user_ad_time_start)
-    await message.answer(i18n.get("/set_time"))
+# @user_router.message(Command(commands="set_time"))
+#async def process_comand_set_time(
+##    message: Message,
+#    conn: AsyncConnection,
+#    bot: Bot,
+#    i18n: dict[str, str],
+#    state: FSMContext,
+#):
+#    await state.set_state(DialogWithUser.user_ad_time_start)
+#   await message.answer(i18n.get("/set_time"))
 
 
 @user_router.message(Command(commands="my_groups"))
