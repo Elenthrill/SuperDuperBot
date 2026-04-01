@@ -85,9 +85,36 @@
 
 ## Как начать работу
 
-1. Скопируйте `.env.example` в `.env` и пропишите необходимые переменные окружения.
-2. Установите зависимости из `requirements.txt`.
-3. Запустите проект через команду `python main.py` или с помощью Docker, используя `docker-compose.yml`.
+Clone the repository:
+
+bash
+git clone https://github.com/kmsint/aiogram3_stepik_course.git
+Move to the db_echo_bot folder:
+
+bash
+cd aiogram3_stepik_course/db_echo_bot
+Create .env file and copy the code from .env.example file into it.
+
+Fill in the file .env with real data (BOT_TOKEN, POSTGRES_USER, POSTGRES_PASSWORD, etc.)
+
+Launch containers with Postgres, Redis, and pgAdmin with the command (You need docker and docker-compose installed on your local machine):
+
+bash
+docker compose up -d
+Create a virtual environment in the project root and activate it.
+
+Install the required libraries in the virtual environment with pip:
+
+bash
+pip install -r requirements.txt
+Apply database migrations using the command:
+
+bash
+python3 -m migrations.create_tables
+Run main.py to launch the bot:
+
+bash
+python3 main.py
 
 ---
 
