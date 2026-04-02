@@ -12,3 +12,12 @@ class DialogWithUser(StatesGroup):
 class SetTimeStates(StatesGroup):
     choosing_day = State()
     input_duration = State()
+
+class CreateTaskStates(StatesGroup):
+    waiting_group_id = State()
+    waiting_description = State()
+    waiting_start_time = State()
+    waiting_duration = State()
+    waiting_deadline = State()
+    waiting_reward = State()
+    aprove_task = State()
