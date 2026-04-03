@@ -155,6 +155,20 @@ def parse_user_time(text: str):
 
     return None, None
 
+def parse_clock_time(text: str):
+    text = text.strip().replace(" ", "")
+    try:
+        parts = text.split(":")
+        if len(parts) != 2:
+            return None
+        h = int(parts[0])
+        m = int(parts[1])
+        if 0 <= h <= 23 and 0 <= m <= 59:
+            return h, m
+        return None
+    except:
+        return None
+
 def find_group_id(
     user_input: str, groups_dict: dict[int, str]
 ) -> Optional[Tuple[int, str]]:
