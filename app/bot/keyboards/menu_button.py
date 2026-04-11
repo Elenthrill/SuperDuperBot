@@ -14,6 +14,15 @@ def get_main_menu_commands(i18n: dict[str, str], role: UserRole):
             BotCommand(
                 command="/new_task", description=i18n.get("/new_task_description")
             ),
+            BotCommand(
+                command="/free_tasks", description=i18n.get("/free_tasks_description")
+            ),
+            BotCommand(
+                command="/my_tasks", description=i18n.get("/my_tasks_description")
+            ),
+            BotCommand(
+                command="/my_groups", description=i18n.get("/my_groups_description")
+            ),
         ]
     elif role == UserRole.ADMIN:
         return [

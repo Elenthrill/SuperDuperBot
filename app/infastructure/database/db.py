@@ -5,6 +5,7 @@ from typing import Any
 from app.bot.entities.user import User
 from app.bot.entities.task import Task
 from app.bot.entities.group import Group
+from app.bot.enums.roles import TaskStatus
 from typing import List, Dict
 
 from app.bot.enums.roles import UserRole
@@ -54,6 +55,55 @@ async def add_user(conn: AsyncConnection, *, user: User) -> None:
         user.raiting,
         user.free_time_at_week,
     )
+
+
+# доделать логику с названием группы
+async def get_group_free_tasks(
+    conn: AsyncConnection,
+    *,
+    group_id: int,
+) -> List[Dict[str, Any]]:
+    async with conn.cursor(row_factory=dict_row) as cursor:
+        await cursor.execute(
+            """
+            SELECT
+                id,
+                description,
+                start_time,
+                duration,
+                reward,
+                status,
+                deadline,
+                end_time,
+                user_id,
+                group_id
+            FROM tasks
+            WHERE group_id = %s AND status = %s
+            ORDER BY deadline ASC
+            """,
+            (group_id, TaskStatus.PENDING),
+        )
+        rows = await cursor.fetchall()
+    return rows
+
+
+async def get_group_title_by_id(conn: AsyncConnection, *, group_id: int) -> str:
+    async with conn.cursor(row_factory=dict_row) as cursor:
+        try:
+            await cursor.execute(
+                """
+                SELECT
+                    title
+                FROM groups
+                Where group_id = %s
+                """,
+                (group_id,),
+            )
+            row = await cursor.fetchone()
+            return row["title"] if row else None
+        except Exception as e:
+            logger.error(f"Не удалось найти имя: {e}", exc_info=True)
+            raise
 
 
 async def add_task_to_db(
@@ -474,3 +524,65 @@ async def add_group(conn: AsyncConnection, group: Group):
         logger.info(
             f"группа {group.name} с id {group.group_id} добавлена в таблицу groups"
         )
+
+
+async def user_accept_task(
+    conn: AsyncConnection,
+    *,
+    task_id: int,
+    status: str,
+    user_id: int,
+) -> None:
+    """
+    Обновляет статус и назначенного пользователя для задачи.
+
+    Args:
+        conn: Асинхронное соединение с БД.
+        task_id: Идентификатор задачи (id).
+        status: Новый статус задачи (например, 'in_progress', 'completed').
+        user_id: Идентификатор пользователя, которому назначается задача.
+    """
+    async with conn.cursor() as cursor:
+        await cursor.execute(
+            query="""
+                UPDATE tasks
+                SET status = %s, user_id = %s
+                WHERE id = %s
+            """,
+            params=(status, user_id, task_id),
+        )
+    logger.info(
+        "Task `%s` updated: status = '%s', user_id = %s", task_id, status, user_id
+    )
+    return True
+
+
+async def user_cancel_task(
+    conn: AsyncConnection,
+    *,
+    task_id: int,
+    status: str,
+    user_id: int,
+) -> None:
+    """
+    Обновляет статус и назначенного пользователя для задачи.
+
+    Args:
+        conn: Асинхронное соединение с БД.
+        task_id: Идентификатор задачи (id).
+        status: Новый статус задачи (например, 'in_progress', 'completed').
+        user_id: Идентификатор пользователя, которому назначается задача.
+    """
+    async with conn.cursor() as cursor:
+        await cursor.execute(
+            query="""
+                UPDATE tasks
+                SET status = %s, user_id = %s
+                WHERE id = %s
+            """,
+            params=(status, None, task_id),
+        )
+    logger.info(
+        "Task `%s` updated: status = '%s', user_id = %s", task_id, status, user_id
+    )
+    return True

@@ -10,6 +10,8 @@ from app.bot.handlers.other import others_router
 from app.bot.handlers.settings import settings_router
 from app.bot.handlers.user import user_router
 from app.bot.handlers.group import group_router
+from app.bot.handlers.free_task import task_router
+from app.bot.handlers.user_task import user_task_router
 from app.bot.i18n.translator import get_tranlations
 from app.bot.midlewares.database import DataBaseMiddleware
 from app.bot.midlewares.i18n import TranslatorMiddleware
@@ -62,7 +64,14 @@ async def main(config: Config) -> None:
     # Подключаем роутеры в нужном порядке
     logger.info("Including routers...")
     dp.include_routers(
-        settings_router, admin_router, user_router, group_router, others_router, set_time_router
+        settings_router,
+        admin_router,
+        user_router,
+        group_router,
+        others_router,
+        set_time_router,
+        task_router,
+        user_task_router,
     )
 
     # Подключаем миддлвари в нужном порядке

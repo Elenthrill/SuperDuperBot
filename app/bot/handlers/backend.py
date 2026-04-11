@@ -122,6 +122,7 @@ async def get_groups_text(conn: AsyncConnection, user_id: int) -> Optional[str]:
     lines = [f"Группа: {group['title']} ID:{group['group_id']}" for group in groups]
     return "\n".join(lines)
 
+
 def parse_user_time(text: str):
     text = text.lower().replace(" ", "")
 
@@ -155,6 +156,7 @@ def parse_user_time(text: str):
 
     return None, None
 
+
 def parse_clock_time(text: str):
     text = text.strip().replace(" ", "")
     try:
@@ -168,6 +170,7 @@ def parse_clock_time(text: str):
         return None
     except:
         return None
+
 
 def find_group_id(
     user_input: str, groups_dict: dict[int, str]
