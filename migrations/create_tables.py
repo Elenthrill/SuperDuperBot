@@ -76,7 +76,8 @@ async def main():
                                 deadline TIMESTAMPTZ NOT NULL,
                                 end_time TIMESTAMPTZ,
                                 user_id BIGINT REFERENCES users(user_id),
-                                group_id BIGINT REFERENCES groups(group_id)
+                                group_id BIGINT REFERENCES groups(group_id),
+                                notified BOOLEAN NOT NULL DEFAULT FALSE
                             ); 
                             CREATE INDEX idx_tasks_user_id ON tasks(user_id);
                             

@@ -24,6 +24,8 @@ from app.infastructure.database.connection import get_pg_pool
 from app.bot.handlers.group_events import group_events_router
 from config.config import Config
 from redis.asyncio import Redis
+from app.bot.scheduler.scheduler import scheduler
+from app.bot.services.task_notifications import check_expiring_tasks
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +64,21 @@ async def main(config: Config) -> None:
     translations = get_tranlations()
     # формируем список локалей из ключей словаря с переводами
     locales = list(translations.keys())
+
+    scheduler.add_job(
+        check_expiring_tasks,
+        trigger="interval",
+        seconds=10,
+        kwargs={
+            "bot": bot,
+            "db_pool": db_pool
+        },
+        id="task_expire_notifications",
+        replace_existing=True
+    )
+
+    scheduler.start()
+    logger.info("Scheduler started")
 
     # Подключаем роутеры в нужном порядке
     logger.info("Including routers...")

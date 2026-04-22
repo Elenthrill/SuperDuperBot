@@ -5,6 +5,7 @@ import sys
 from app.bot import main
 from config.config import Config, load_config
 
+
 config: Config = load_config()
 
 logging.basicConfig(
