@@ -86,4 +86,10 @@ RU: dict[str, str] = {
     "/free_tasks_description": "свободные задачи в группах в которых вы состоите",
     "/my_tasks_description": "ваши текущие задачи",
     "/my_groups_description": "группы в уоторых вы состоите",
+    "user_cancel_task": "✅ Вы отказались от задачи.",
+    "user_complete_task": "✅ Вы сдали задачу.",
+    "archive_choice": "Выберите какие задачи вы хотите просмотреть",
+    "no_task_in_archive": "у данной группы нет задач в архиве",
+    "btn_group_click": "архив группы {title}\nid:{id}",
+    "bnt_self_click": "Ваши завершенные задачи",
 }

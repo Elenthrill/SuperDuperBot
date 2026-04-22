@@ -12,6 +12,7 @@ from app.bot.handlers.user import user_router
 from app.bot.handlers.group import group_router
 from app.bot.handlers.free_task import task_router
 from app.bot.handlers.user_task import user_task_router
+from app.bot.handlers.task_history import archive_task_router
 from app.bot.i18n.translator import get_tranlations
 from app.bot.midlewares.database import DataBaseMiddleware
 from app.bot.midlewares.i18n import TranslatorMiddleware
@@ -72,6 +73,7 @@ async def main(config: Config) -> None:
         set_time_router,
         task_router,
         user_task_router,
+        archive_task_router,
     )
 
     # Подключаем миддлвари в нужном порядке
