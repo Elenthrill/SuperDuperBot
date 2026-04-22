@@ -193,6 +193,9 @@ async def process_description(message: Message, state: FSMContext, i18n: dict):
     if len(description) < 3:
         await message.answer("❌ Описание должно содержать хотя бы 3 символа.")
         return
+    elif len(description) > 1000:
+        await message.answer("❌ Описание должно содержать не более 1000 символа.")
+        return
     await state.update_data(description=description)
     await state.set_state(CreateTaskStates.waiting_duration)
     await message.answer(i18n.get("ask_task_duration"))
@@ -204,17 +207,18 @@ async def process_duration(
     state: FSMContext,
     i18n: dict,
 ):
-    try:
-        duration = parse_duration(message.text.strip())
-        dur_str = str(duration)
-    except ValueError:
+
+    duration = parse_duration(message.text.strip())
+    dur_str = str(duration)
+    if duration == None:
         await message.answer(i18n.get("invalid_duration"))
         return
-
     if duration.total_seconds() <= 0:
         await message.answer("❌ Длительность должна быть положительной.")
         return
-
+    if duration.total_seconds() > 12 * 3600:
+        await message.answer("❌ Длительность должна быть не более 12 часов.")
+        return
     await state.update_data(duration=dur_str)
     await state.set_state(CreateTaskStates.waiting_deadline)
     await message.answer(i18n.get("ask_deadline"))
@@ -225,11 +229,12 @@ async def process_deadline(message: Message, state: FSMContext, i18n: dict):
     try:
         deadline = datetime.strptime(message.text.strip(), "%Y-%m-%d %H:%M")
     except ValueError:
-        await message.answer(i18n("invalid_time"))
+        await message.answer(i18n.get("invalid_time"))
         return
     start_time = datetime.now()
     data = await state.get_data()
-    if deadline <= start_time:
+    duration = str_to_timedelta(data["duration"])
+    if deadline <= start_time + duration:
         await message.answer("❌ Дедлайн должен быть позже времени начала задачи.")
         return
     await state.update_data(
@@ -243,7 +248,7 @@ async def process_deadline(message: Message, state: FSMContext, i18n: dict):
 async def process_reward(message: Message, i18n: dict, state: FSMContext):
     try:
         reward = int(message.text.strip())
-        if reward <= 0:
+        if reward <= 0 | reward > 10:
             raise ValueError
     except ValueError:
         await message.answer(i18n.get("invalid_reward"))

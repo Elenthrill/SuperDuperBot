@@ -39,6 +39,8 @@ async def add_user_from_event(
             lang=user_obj.language_code,  # для ChatMemberUpdated может быть None
             role=UserRole.USER,
         )
+        if user.lang == None:
+            user.lang == "ru"
         await add_user(conn, user=user)
     else:
         await change_user_alive_status(

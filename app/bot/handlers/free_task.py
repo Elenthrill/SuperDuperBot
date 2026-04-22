@@ -86,7 +86,7 @@ async def process_pagination(
         return
 
     # Формируем обновлённый текст и клавиатуру
-    new_text = build_tasks_page_text(tasks, new_page)
+    new_text = await build_tasks_page_text(tasks, new_page, conn=conn)
     new_keyboard = get_tasks_keyboard(tasks, new_page)
 
     await callback.message.edit_text(

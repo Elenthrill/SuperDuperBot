@@ -31,6 +31,5 @@ async def on_bot_added(event: ChatMemberUpdated, i18n: dict, conn: AsyncConnecti
         )
     await event.bot.send_message(
         chat_id=event.chat.id,
-        text=i18n.get("add_to_group")
-        + f"{event.from_user.full_name} + напиши мне: {deep_link}.",
+        text=i18n.get("add_to_group") + f"напиши мне: {deep_link}.",
     )
