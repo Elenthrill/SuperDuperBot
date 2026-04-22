@@ -167,10 +167,10 @@ async def get_user_tasks(
                 user_id,
                 group_id
             FROM tasks
-            WHERE user_id = %s
+            WHERE user_id = %s AND status = %s
             ORDER BY deadline ASC
             """,
-            (user_id,),
+            (user_id, TaskStatus.IN_PROGRESS),
         )
         rows = await cursor.fetchall()
     return rows
@@ -557,22 +557,13 @@ async def user_accept_task(
     return True
 
 
-async def user_cancel_task(
+async def set_status_to_task(
     conn: AsyncConnection,
     *,
     task_id: int,
     status: str,
-    user_id: int,
+    user_id: int = None,
 ) -> None:
-    """
-    Обновляет статус и назначенного пользователя для задачи.
-
-    Args:
-        conn: Асинхронное соединение с БД.
-        task_id: Идентификатор задачи (id).
-        status: Новый статус задачи (например, 'in_progress', 'completed').
-        user_id: Идентификатор пользователя, которому назначается задача.
-    """
     async with conn.cursor() as cursor:
         await cursor.execute(
             query="""
@@ -580,9 +571,86 @@ async def user_cancel_task(
                 SET status = %s, user_id = %s
                 WHERE id = %s
             """,
-            params=(status, None, task_id),
+            params=(status, user_id, task_id),
         )
     logger.info(
         "Task `%s` updated: status = '%s', user_id = %s", task_id, status, user_id
     )
     return True
+
+
+async def get_group_completed_tasks(
+    conn: AsyncConnection,
+    *,
+    group_id: int,
+) -> List[Dict[str, Any]]:
+    async with conn.cursor(row_factory=dict_row) as cursor:
+        await cursor.execute(
+            """
+            SELECT
+                id,
+                description,
+                start_time,
+                duration,
+                reward,
+                status,
+                deadline,
+                end_time,
+                user_id,
+                group_id
+            FROM tasks
+            WHERE group_id = %s AND status = %s
+            ORDER BY deadline ASC
+            """,
+            (group_id, TaskStatus.COMPLETED),
+        )
+        rows = await cursor.fetchall()
+    return rows
+
+
+async def get_user_complete_tasks(
+    conn: AsyncConnection,
+    *,
+    user_id: int,
+) -> List[Dict[str, Any]]:
+    async with conn.cursor(row_factory=dict_row) as cursor:
+        await cursor.execute(
+            """
+            SELECT
+                id,
+                description,
+                start_time,
+                duration,
+                reward,
+                status,
+                deadline,
+                end_time,
+                user_id,
+                group_id
+            FROM tasks
+            WHERE user_id = %s AND status = %s
+            ORDER BY deadline ASC
+            """,
+            (user_id, TaskStatus.COMPLETED),
+        )
+        rows = await cursor.fetchall()
+    return rows
+
+
+async def get_username_by_id(conn: AsyncConnection, *, user_id: int) -> str:
+    async with conn.cursor(row_factory=dict_row) as cursor:
+        try:
+            await cursor.execute(
+                """
+                SELECT
+                    username
+                FROM users
+                Where user_id = %s
+                """,
+                (user_id,),
+            )
+            row = await cursor.fetchone()
+            return row["username"] if row else None
+        except Exception as e:
+            logger.error(f"Не удалось найти имя: {e}", exc_info=True)
+            raise

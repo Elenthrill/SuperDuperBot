@@ -45,11 +45,17 @@ def get_user_tasks_keyboard(tasks: list, page: int) -> InlineKeyboardMarkup:
                     callback_data=UserTasksPaginationCallback(
                         action="cancel", page=page, task_id=task["id"]
                     ).pack(),
-                )
+                ),
+                InlineKeyboardButton(
+                    text=f"✅ Завершить #{task['id']}",
+                    callback_data=UserTasksPaginationCallback(
+                        action="complete", page=page, task_id=task["id"]
+                    ).pack(),
+                ),
             ]
         )
 
-    return InlineKeyboardMarkup(inline_keyboard=[nav_row] + task_rows)
+    return InlineKeyboardMarkup(inline_keyboard=task_rows + [nav_row])
 
 
 async def build_user_tasks_page_text(
@@ -67,12 +73,12 @@ async def build_user_tasks_page_text(
         deadline_str = (
             task["deadline"].strftime("%d.%m.%Y %H:%M") if task.get("deadline") else "—"
         )
-
+        duration_str = str(task["duration"])
         title = await get_group_title_by_id(conn=conn, group_id=task["group_id"])
         if not title:
             title = "-"
         lines.append(
-            f"<b>#{task['id']}</b> — {task['description']}\n"
+            f"<b>#{task['id']}</b> — {duration_str[:-3]}\n"
             f"⏱ Старт: {start_str}  |  ⌛️ {task['duration']} мин.\n"
             f"💰 Награда: {task['reward']}\n"
             f"⏳ Дедлайн: {deadline_str}\n"

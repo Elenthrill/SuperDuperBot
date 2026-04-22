@@ -12,7 +12,7 @@ from app.bot.keyboards.user_task_kb import (
 )
 from app.infastructure.database.db import (
     get_user_tasks,
-    user_cancel_task,
+    set_status_to_task,
 )
 from datetime import timedelta
 
@@ -74,21 +74,31 @@ async def process_my_tasks_pagination(
 
 # Если задача просрочена, то снова поставит в ожидание
 @user_task_router.callback_query(
-    UserTasksPaginationCallback.filter(F.action == "cancel")
+    UserTasksPaginationCallback.filter(
+        (F.action == "cancel") | (F.action == "complete")
+    )
 )
-async def process_cancel_task(
+async def process_complete_or_cancel_task(
     callback: types.CallbackQuery,
     callback_data: UserTasksPaginationCallback,
     conn: AsyncConnection,
+    i18n: dict,
 ):
     task_id = callback_data.task_id
     user_id = callback.from_user.id
 
-    success = await user_cancel_task(
-        conn, task_id=task_id, user_id=user_id, status=TaskStatus.PENDING
-    )
+    if callback_data.action == "cancel":
+        success = await set_status_to_task(
+            conn, task_id=task_id, user_id=None, status=TaskStatus.PENDING
+        )
+        text = i18n.get("user_cancel_task")
+    else:
+        success = await set_status_to_task(
+            conn, task_id=task_id, user_id=user_id, status=TaskStatus.COMPLETED
+        )
+        text = i18n.get("user_complete_task")
     if success:
-        await callback.answer("✅ Вы отказались от задачи.", show_alert=True)
+        await callback.answer(text, show_alert=True)
         # Обновляем список задач на той же странице (или переходим на предыдущую, если страница опустела)
         my_tasks = await get_user_tasks(conn, user_id=user_id)
         total_pages = (len(my_tasks) + TASKS_PER_PAGE - 1) // TASKS_PER_PAGE
