@@ -114,7 +114,7 @@ def get_user_tasks_keyboard(tasks: list, page: int) -> InlineKeyboardMarkup:
                 ),
             ]
         )
-    return InlineKeyboardMarkup(inline_keyboard=[nav_row] + task_rows)
+    return InlineKeyboardMarkup(inline_keyboard=task_rows + [nav_row])
 
 
 async def build_archive_tasks_page_text(

@@ -92,4 +92,8 @@ RU: dict[str, str] = {
     "no_task_in_archive": "у данной группы нет задач в архиве",
     "btn_group_click": "архив группы {title}\nid:{id}",
     "bnt_self_click": "Ваши завершенные задачи",
+    "/archive_description": "Просмотр выполненных задач",
+    "invalid_duration": "неверный формат введенного времени",
+    "invalid_time": "неверный формат даты",
+    "invalid_reward": "награда должна быть от 1 до 10",
 }
