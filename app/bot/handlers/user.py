@@ -110,6 +110,9 @@ async def process_comand_my_groups(
     message: Message, i18n: dict[str, str], conn: AsyncConnection
 ):
     text = await get_groups_text(conn, user_id=message.from_user.id)
+    if text == None:
+        await message.answer(text=i18n.get("no_groups"))
+        return
     await message.answer(text=text)
 
 

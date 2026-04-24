@@ -65,16 +65,14 @@ async def main(config: Config) -> None:
     # формируем список локалей из ключей словаря с переводами
     locales = list(translations.keys())
 
+    # а че это, подключение таймера ти шо?
     scheduler.add_job(
         check_expiring_tasks,
         trigger="interval",
         seconds=10,
-        kwargs={
-            "bot": bot,
-            "db_pool": db_pool
-        },
+        kwargs={"bot": bot, "db_pool": db_pool},
         id="task_expire_notifications",
-        replace_existing=True
+        replace_existing=True,
     )
 
     scheduler.start()
@@ -92,7 +90,7 @@ async def main(config: Config) -> None:
         task_router,
         user_task_router,
         archive_task_router,
-        group_events_router
+        group_events_router,
     )
 
     # Подключаем миддлвари в нужном порядке

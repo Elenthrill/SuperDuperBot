@@ -479,6 +479,19 @@ async def get_group(
     return row if row else None
 
 
+async def set_group_title(conn: AsyncConnection, *, group_id: int, new_title: str):
+    async with conn.cursor() as cursor:
+        await cursor.execute(
+            query="""
+                UPDATE groups
+                SET title = %s
+                WHERE group_id = %s
+            """,
+            params=(new_title, group_id),
+        )
+    logger.info(f"название группы {group_id} измененно на {new_title}")
+
+
 async def add_to_user_group_table(
     conn: AsyncConnection,
     *,
@@ -653,4 +666,19 @@ async def get_username_by_id(conn: AsyncConnection, *, user_id: int) -> str:
             return row["username"] if row else None
         except Exception as e:
             logger.error(f"Не удалось найти имя: {e}", exc_info=True)
+            raise
+
+
+async def delete_group(conn: AsyncConnection, *, group_id: int):
+    async with conn.cursor(row_factory=dict_row) as cursor:
+        try:
+            await cursor.execute(
+                """
+                DELETE FROM groups 
+                WHERE group_id = %s
+                """,
+                (group_id,),
+            )
+        except Exception as e:
+            logger.error(f"Не удалось удалить группу {group_id}: {e}", exc_info=True)
             raise

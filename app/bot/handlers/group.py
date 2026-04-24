@@ -1,8 +1,13 @@
 import logging
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.filters import ChatMemberUpdatedFilter, IS_MEMBER
-from aiogram.types import ChatMemberUpdated
-from app.infastructure.database.db import add_group, add_to_user_group_table, get_group
+from aiogram.types import ChatMemberUpdated, ContentType, Message
+from app.infastructure.database.db import (
+    add_group,
+    add_to_user_group_table,
+    get_group,
+    set_group_title,
+)
 from app.bot.entities.group import Group
 from psycopg import AsyncConnection
 from app.bot.handlers.backend import add_user_from_event
@@ -33,3 +38,10 @@ async def on_bot_added(event: ChatMemberUpdated, i18n: dict, conn: AsyncConnecti
         chat_id=event.chat.id,
         text=i18n.get("add_to_group") + f"напиши мне: {deep_link}.",
     )
+
+
+@group_router.message(F.content_type == ContentType.NEW_CHAT_TITLE)
+async def group_title_changed(message: Message, conn: AsyncConnection, i18n: dict):
+    new_title = message.new_chat_title
+    group_id = message.chat.id
+    await set_group_title(conn, group_id=group_id, new_title=new_title)
