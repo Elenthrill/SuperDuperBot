@@ -45,6 +45,7 @@ from psycopg import AsyncConnection
 logger = logging.getLogger(__name__)
 
 user_router = Router()
+user_router.message.filter(lambda msg: msg.chat.type == "private")
 
 
 # пользователь кликнул на ссылку

@@ -21,6 +21,7 @@ from psycopg import AsyncConnection
 logger = logging.getLogger(__name__)
 
 settings_router = Router()
+settings_router.message.filter(lambda msg: msg.chat.type == "private")
 
 
 @settings_router.message(StateFilter(LangSg.lang), ~CommandStart())

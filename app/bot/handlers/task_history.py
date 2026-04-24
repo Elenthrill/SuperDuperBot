@@ -22,6 +22,8 @@ from app.infastructure.database.db import (
 logger = logging.getLogger(__name__)
 archive_task_router = Router()
 
+archive_task_router.message.filter(lambda msg: msg.chat.type == "private")
+
 
 @archive_task_router.message(Command("archive"))
 async def process_archive(message: Message, conn: AsyncConnection, i18n: dict):
