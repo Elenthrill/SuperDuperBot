@@ -21,8 +21,11 @@ from app.bot.midlewares.shadow_ban import ShadowBanMiddleware
 from app.bot.handlers.set_time import set_time_router
 from app.bot.midlewares.add_user_msg_in_db import AddUserMessageInDatabase
 from app.infastructure.database.connection import get_pg_pool
+from app.bot.handlers.group_events import group_events_router
 from config.config import Config
 from redis.asyncio import Redis
+from app.bot.scheduler.scheduler import scheduler
+from app.bot.services.task_notifications import check_expiring_tasks
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +65,21 @@ async def main(config: Config) -> None:
     # формируем список локалей из ключей словаря с переводами
     locales = list(translations.keys())
 
+    scheduler.add_job(
+        check_expiring_tasks,
+        trigger="interval",
+        seconds=10,
+        kwargs={
+            "bot": bot,
+            "db_pool": db_pool
+        },
+        id="task_expire_notifications",
+        replace_existing=True
+    )
+
+    scheduler.start()
+    logger.info("Scheduler started")
+
     # Подключаем роутеры в нужном порядке
     logger.info("Including routers...")
     dp.include_routers(
@@ -74,6 +92,7 @@ async def main(config: Config) -> None:
         task_router,
         user_task_router,
         archive_task_router,
+        group_events_router
     )
 
     # Подключаем миддлвари в нужном порядке
