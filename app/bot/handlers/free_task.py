@@ -18,6 +18,7 @@ from datetime import timedelta
 
 
 task_router = Router()
+task_router.message.filter(lambda msg: msg.chat.type == "private")
 
 
 @task_router.message(Command("free_tasks"))

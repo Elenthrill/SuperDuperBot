@@ -19,6 +19,8 @@ from datetime import timedelta
 logger = logging.getLogger(__name__)
 user_task_router = Router()
 
+user_task_router.message.filter(lambda msg: msg.chat.type == "private")
+
 
 @user_task_router.message(Command("my_tasks"))
 async def show_my_tasks(message: types.Message, conn: AsyncConnection, i18n: dict):

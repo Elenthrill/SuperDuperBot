@@ -17,6 +17,7 @@ from psycopg import AsyncConnection
 logger = logging.getLogger(__name__)
 admin_router = Router()
 admin_router.message.filter(UserRoleFilter(UserRole.ADMIN))
+admin_router.message.filter(lambda msg: msg.chat.type == "private")
 
 
 @admin_router.message(Command("help"))
