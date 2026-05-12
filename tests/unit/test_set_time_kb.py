@@ -43,7 +43,8 @@ def test_kb_next_week_days_count_and_first_day():
     assert first_button.callback_data == f"day_{next_monday.isoformat()}"
 
 @pytest.mark.xfail(
-    reason="BUG: generate_week_days падает из-за конфликта импортов datetime в set_time_kb.py"
+    reason="BUG: generate_week_days падает из-за конфликта импортов datetime в set_time_kb.py",
+    strict=True,
 )
 def test_generate_week_days_has_7_buttons():
     keyboard = generate_week_days(week_offset=0)

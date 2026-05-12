@@ -77,7 +77,14 @@ def test_group_rating_is_sum_of_task_rewards():
 
     assert group.get_raiting() == 40
 
-@pytest.mark.xfail(reason="BUG: Метод подсчёта общей длительности задач в группе падает, если в группе есть задачи. Причина: программа начинает считать сумму с числа 0, а потом пытается прибавить к нему значение типа timedelta.")
+@pytest.mark.xfail(
+    reason=(
+        "BUG: Метод подсчёта общей длительности задач в группе падает, "
+        "если в группе есть задачи. Причина: программа начинает считать сумму "
+        "с числа 0, а потом пытается прибавить к нему значение типа timedelta."
+    ),
+    strict=True,
+)
 def test_group_all_tasks_duration_is_sum_of_durations():
     group = Group(
         group_id=10,
@@ -114,7 +121,14 @@ def test_empty_group_rating_is_zero():
 
     assert group.get_raiting() == 0
 
-@pytest.mark.xfail(reason="BUG: Для группы без задач метод общей длительности возвращает обычное число 0, хотя должен возвращать нулевую длительность timedelta(0). Из-за этого тип результата отличается от ожидаемого.")
+@pytest.mark.xfail(
+    reason=(
+        "BUG: Для группы без задач метод общей длительности возвращает обычное "
+        "число 0, хотя должен возвращать нулевую длительность timedelta(0). "
+        "Из-за этого тип результата отличается от ожидаемого."
+    ),
+    strict=True,
+)
 def test_empty_group_all_tasks_duration_is_zero_timedelta():
     group = Group(group_id=10)
 

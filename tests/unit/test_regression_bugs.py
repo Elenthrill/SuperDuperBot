@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from types import SimpleNamespace
 
 import pytest
 
@@ -15,46 +14,24 @@ from app.bot.handlers.user import (
 )
 
 
-class FakeMessage:
-    def __init__(self, text: str, user_id: int = 123, username: str = "tester", language_code: str | None = "ru"):
-        self.text = text
-        self.from_user = SimpleNamespace(
-            id=user_id,
-            username=username,
-            language_code=language_code,
-        )
-        self.answers = []
-
-    async def answer(self, text: str, **kwargs):
-        self.answers.append(text)
-
-
-class FakeState:
-    def __init__(self, data=None):
-        self.data = data or {}
-        self.updated_data = {}
-        self.state = None
-        self.cleared = False
-
-    async def update_data(self, **kwargs):
-        self.updated_data.update(kwargs)
-        self.data.update(kwargs)
-
-    async def get_data(self):
-        return self.data
-
-    async def set_state(self, state=None):
-        self.state = state
-
-    async def clear(self):
-        self.cleared = True
+def assert_last_answer_text(message, expected_text):
+    assert message.answers[0]["text"] == expected_text
 
 
 def test_parse_duration_accepts_valid_lowercase_format():
     assert parse_duration("1h30m") == timedelta(hours=1, minutes=30)
 
 
-@pytest.mark.xfail(reason="BUG-018: Продолжительность задачи в формате 1H30M не принимается, потому что программа различает большие и маленькие буквы. Ожидалось, что H/M и h/m будут обрабатываться одинаково. Продолжительность задачи с пробелами в начале или конце не принимается. Ожидалось, что программа будет убирать лишние пробелы перед проверкой формата.")
+@pytest.mark.xfail(
+    reason=(
+        "BUG-018: Продолжительность задачи в формате 1H30M не принимается, "
+        "потому что программа различает большие и маленькие буквы. "
+        "Ожидалось, что H/M и h/m будут обрабатываться одинаково. "
+        "Продолжительность задачи с пробелами в начале или конце не принимается. "
+        "Ожидалось, что программа будет убирать лишние пробелы перед проверкой формата."
+    ),
+    strict=True,
+)
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [
@@ -83,51 +60,57 @@ def test_bug_17_parse_duration_returns_none_for_invalid_format(raw):
 
 
 @pytest.mark.asyncio
-async def test_bug_17_process_duration_shows_error_for_invalid_duration():
-    message = FakeMessage("wrong-format")
-    state = FakeState()
+async def test_bug_17_process_duration_shows_error_for_invalid_duration(
+    fake_message,
+    fake_state,
+):
+    message = fake_message(text="wrong-format")
+    state = fake_state()
     i18n = {
         "invalid_duration": "Некорректная продолжительность",
     }
 
     await process_duration(message=message, state=state, i18n=i18n)
 
-    assert message.answers == ["Некорректная продолжительность"]
+    assert_last_answer_text(message, "Некорректная продолжительность")
     assert state.updated_data == {}
 
 
 @pytest.mark.asyncio
-async def test_bug_16_process_duration_rejects_zero_duration():
-    message = FakeMessage("0h0m")
-    state = FakeState()
+async def test_bug_16_process_duration_rejects_zero_duration(fake_message, fake_state):
+    message = fake_message(text="0h0m")
+    state = fake_state()
     i18n = {
         "invalid_duration": "Некорректная продолжительность",
     }
 
     await process_duration(message=message, state=state, i18n=i18n)
 
-    assert message.answers == ["❌ Длительность должна быть положительной."]
+    assert_last_answer_text(message, "❌ Длительность должна быть положительной.")
     assert state.updated_data == {}
 
 
 @pytest.mark.asyncio
-async def test_bug_16_process_duration_rejects_too_long_duration():
-    message = FakeMessage("13h0m")
-    state = FakeState()
+async def test_bug_16_process_duration_rejects_too_long_duration(
+    fake_message,
+    fake_state,
+):
+    message = fake_message(text="13h0m")
+    state = fake_state()
     i18n = {
         "invalid_duration": "Некорректная продолжительность",
     }
 
     await process_duration(message=message, state=state, i18n=i18n)
 
-    assert message.answers == ["❌ Длительность должна быть не более 12 часов."]
+    assert_last_answer_text(message, "❌ Длительность должна быть не более 12 часов.")
     assert state.updated_data == {}
 
 
 @pytest.mark.asyncio
-async def test_bug_16_process_duration_accepts_valid_duration():
-    message = FakeMessage("1h30m")
-    state = FakeState()
+async def test_bug_16_process_duration_accepts_valid_duration(fake_message, fake_state):
+    message = fake_message(text="1h30m")
+    state = fake_state()
     i18n = {
         "ask_deadline": "Введите дедлайн",
     }
@@ -135,41 +118,54 @@ async def test_bug_16_process_duration_accepts_valid_duration():
     await process_duration(message=message, state=state, i18n=i18n)
 
     assert state.data["duration"] == "1:30:00"
-    assert message.answers == ["Введите дедлайн"]
+    assert_last_answer_text(message, "Введите дедлайн")
 
 
 @pytest.mark.asyncio
-async def test_bug_14_process_description_rejects_non_breaking_spaces_only():
-    message = FakeMessage("\u00a0\u00a0\u00a0")
-    state = FakeState()
+async def test_bug_14_process_description_rejects_non_breaking_spaces_only(
+    fake_message,
+    fake_state,
+):
+    message = fake_message(text="\u00a0\u00a0\u00a0")
+    state = fake_state()
     i18n = {
         "ask_task_duration": "Введите продолжительность",
     }
 
     await process_description(message=message, state=state, i18n=i18n)
 
-    assert message.answers == ["❌ Описание должно содержать хотя бы 3 символа."]
+    assert_last_answer_text(message, "❌ Описание должно содержать хотя бы 3 символа.")
     assert "description" not in state.data
 
-@pytest.mark.xfail(reason="BUG-021: Описание задачи длиннее 500 символов принимается программой, хотя должно отклоняться с понятным сообщением об ошибке.")
+
+@pytest.mark.xfail(
+    reason=(
+        "BUG-021: Описание задачи длиннее 500 символов принимается программой, "
+        "хотя должно отклоняться с понятным сообщением об ошибке."
+    ),
+    strict=True,
+)
 @pytest.mark.asyncio
-async def test_bug_21_process_description_rejects_more_than_500_chars():
-    message = FakeMessage("a" * 501)
-    state = FakeState()
+async def test_bug_21_process_description_rejects_more_than_500_chars(
+    fake_message,
+    fake_state,
+):
+    message = fake_message(text="a" * 501)
+    state = fake_state()
     i18n = {
         "ask_task_duration": "Введите продолжительность",
     }
 
     await process_description(message=message, state=state, i18n=i18n)
 
-    assert message.answers == ["❌ Описание должно содержать не более 500 символов."]
+    assert_last_answer_text(message, "❌ Описание должно содержать не более 500 символов.")
     assert "description" not in state.data
 
 
 @pytest.mark.asyncio
-async def test_process_description_accepts_normal_description():
-    message = FakeMessage("Нужно вынести мусор")
-    state = FakeState()
+async def test_process_description_accepts_normal_description(fake_message, fake_state):
+    message = fake_message(text="Нужно вынести мусор")
+    state = fake_state()
     i18n = {
         "ask_task_duration": "Введите продолжительность",
     }
@@ -177,46 +173,55 @@ async def test_process_description_accepts_normal_description():
     await process_description(message=message, state=state, i18n=i18n)
 
     assert state.data["description"] == "Нужно вынести мусор"
-    assert message.answers == ["Введите продолжительность"]
+    assert_last_answer_text(message, "Введите продолжительность")
 
 
 @pytest.mark.asyncio
-async def test_bug_15_process_deadline_shows_error_for_invalid_datetime():
-    message = FakeMessage("2026-99-99 25:99")
-    state = FakeState(data={"duration": "1:00:00"})
+async def test_bug_15_process_deadline_shows_error_for_invalid_datetime(
+    fake_message,
+    fake_state,
+):
+    message = fake_message(text="2026-99-99 25:99")
+    state = fake_state(data={"duration": "1:00:00"})
     i18n = {
         "invalid_time": "Некорректный дедлайн",
     }
 
     await process_deadline(message=message, state=state, i18n=i18n)
 
-    assert message.answers == ["Некорректный дедлайн"]
+    assert_last_answer_text(message, "Некорректный дедлайн")
     assert "deadline" not in state.data
 
 
 @pytest.mark.asyncio
-async def test_bug_1_process_deadline_rejects_deadline_before_task_can_finish():
+async def test_bug_1_process_deadline_rejects_deadline_before_task_can_finish(
+    fake_message,
+    fake_state,
+):
     now = datetime.now()
     too_early_deadline = now + timedelta(minutes=30)
 
-    message = FakeMessage(too_early_deadline.strftime("%Y-%m-%d %H:%M"))
-    state = FakeState(data={"duration": "1:00:00"})
+    message = fake_message(text=too_early_deadline.strftime("%Y-%m-%d %H:%M"))
+    state = fake_state(data={"duration": "1:00:00"})
     i18n = {
         "invalid_time": "Некорректный дедлайн",
     }
 
     await process_deadline(message=message, state=state, i18n=i18n)
 
-    assert message.answers == ["❌ Дедлайн должен быть позже времени начала задачи."]
+    assert_last_answer_text(message, "❌ Дедлайн должен быть позже времени начала задачи.")
     assert "deadline" not in state.data
 
 
 @pytest.mark.asyncio
-async def test_process_deadline_accepts_deadline_after_task_can_finish():
+async def test_process_deadline_accepts_deadline_after_task_can_finish(
+    fake_message,
+    fake_state,
+):
     valid_deadline = datetime.now() + timedelta(hours=2)
 
-    message = FakeMessage(valid_deadline.strftime("%Y-%m-%d %H:%M"))
-    state = FakeState(data={"duration": "1:00:00"})
+    message = fake_message(text=valid_deadline.strftime("%Y-%m-%d %H:%M"))
+    state = fake_state(data={"duration": "1:00:00"})
     i18n = {
         "ask_reward": "Введите награду",
     }
@@ -225,12 +230,21 @@ async def test_process_deadline_accepts_deadline_after_task_can_finish():
 
     assert "deadline" in state.data
     assert "start_time" in state.data
-    assert message.answers == ["Введите награду"]
+    assert_last_answer_text(message, "Введите награду")
 
 
-@pytest.mark.xfail(reason="BUG-008: Если у нового пользователя Telegram не определён язык, программа пытается сохранить пользователя с language=None. Это может привести к ошибке БД, потому что поле языка обязательное.")
+@pytest.mark.xfail(
+    reason=(
+        "BUG-008: Если у нового пользователя Telegram не определён язык, "
+        "программа пытается сохранить пользователя с language=None. Это может привести "
+        "к ошибке БД, потому что поле языка обязательное."
+    ),
+    strict=True,
+)
 @pytest.mark.asyncio
-async def test_bug_8_add_user_from_event_sets_default_language_when_language_code_is_none(monkeypatch):
+async def test_bug_8_add_user_from_event_sets_default_language_when_language_code_is_none(
+    monkeypatch,
+):
     saved_user = None
 
     async def fake_get_user(conn, user_id):
@@ -258,11 +272,19 @@ async def test_bug_8_add_user_from_event_sets_default_language_when_language_cod
     assert saved_user.lang == "ru"
     assert saved_user.role == UserRole.USER
 
-@pytest.mark.xfail(reason="BUG-020: HTML-подобные теги в описании задачи не экранируются перед отправкой сообщения в Telegram. Из-за этого описание вроде <script>alert(1)</script> может сломать отправку сообщения с HTML-разметкой.")
+
+@pytest.mark.xfail(
+    reason=(
+        "BUG-020: HTML-подобные теги в описании задачи не экранируются перед "
+        "отправкой сообщения в Telegram. Из-за этого описание вроде "
+        "<script>alert(1)</script> может сломать отправку сообщения с HTML-разметкой."
+    ),
+    strict=True,
+)
 @pytest.mark.asyncio
-async def test_bug_20_process_reward_escapes_html_like_description():
-    message = FakeMessage("5")
-    state = FakeState(
+async def test_bug_20_process_reward_escapes_html_like_description(fake_message, fake_state):
+    message = fake_message(text="5")
+    state = fake_state(
         data={
             "description": "<script>alert(1)</script>",
             "start_time": datetime(2026, 4, 24, 10, 0).isoformat(),
@@ -286,18 +308,30 @@ async def test_bug_20_process_reward_escapes_html_like_description():
 
     await process_reward(message=message, i18n=i18n, state=state)
 
-    answer = message.answers[0]
+    answer = message.answers[0]["text"]
 
     assert "<script>" not in answer
     assert "</script>" not in answer
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in answer
 
-@pytest.mark.xfail(reason="BUG: Программа принимает награду 0, хотя количество баллов за задачу должно быть положительным. рограмма принимает отрицательную награду, например -1, хотя количество баллов за задачу не должно быть меньше нуля.")
+
+@pytest.mark.xfail(
+    reason=(
+        "BUG: Программа принимает награду 0, хотя количество баллов за задачу "
+        "должно быть положительным. Программа принимает отрицательную награду, "
+        "например -1, хотя количество баллов за задачу не должно быть меньше нуля."
+    ),
+    strict=True,
+)
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reward", ["0", "-1"])
-async def test_bug_process_reward_rejects_zero_and_negative_reward(reward):
-    message = FakeMessage(reward)
-    state = FakeState(
+async def test_bug_process_reward_rejects_zero_and_negative_reward(
+    reward,
+    fake_message,
+    fake_state,
+):
+    message = fake_message(text=reward)
+    state = fake_state(
         data={
             "description": "Task",
             "start_time": datetime(2026, 4, 24, 10, 0).isoformat(),
@@ -321,14 +355,18 @@ async def test_bug_process_reward_rejects_zero_and_negative_reward(reward):
 
     await process_reward(message=message, i18n=i18n, state=state)
 
-    assert message.answers == ["Некорректная награда"]
+    assert_last_answer_text(message, "Некорректная награда")
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reward", ["11", "abc"])
-async def test_process_reward_rejects_invalid_reward_that_is_currently_handled(reward):
-    message = FakeMessage(reward)
-    state = FakeState(
+async def test_process_reward_rejects_invalid_reward_that_is_currently_handled(
+    reward,
+    fake_message,
+    fake_state,
+):
+    message = fake_message(text=reward)
+    state = fake_state(
         data={
             "description": "Task",
             "start_time": datetime(2026, 4, 24, 10, 0).isoformat(),
@@ -344,7 +382,8 @@ async def test_process_reward_rejects_invalid_reward_that_is_currently_handled(r
 
     await process_reward(message=message, i18n=i18n, state=state)
 
-    assert message.answers == ["Некорректная награда"]
+    assert_last_answer_text(message, "Некорректная награда")
+
 
 def make_aiogram_message(
     text: str = "/start",

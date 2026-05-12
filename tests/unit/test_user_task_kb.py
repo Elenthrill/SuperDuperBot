@@ -111,3 +111,26 @@ async def test_build_user_tasks_page_text_uses_dash_when_group_title_missing(mon
     )
 
     assert "Группа: -" in text
+
+@pytest.mark.xfail(
+    reason="BUG v2-006: в списке взятых задач вместо описания отображается продолжительность задачи"
+)
+
+@pytest.mark.asyncio
+async def test_bug_user_tasks_page_text_should_show_task_description(monkeypatch):
+    async def fake_get_group_title_by_id(conn, group_id):
+        return f"Group {group_id}"
+
+    monkeypatch.setattr(
+        user_task_kb,
+        "get_group_title_by_id",
+        fake_get_group_title_by_id,
+    )
+
+    text = await build_user_tasks_page_text(
+        tasks=[make_task(1, group_id=777)],
+        page=0,
+        conn=object(),
+    )
+
+    assert "Task 1" in text
